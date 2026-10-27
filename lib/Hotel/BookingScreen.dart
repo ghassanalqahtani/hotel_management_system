@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'data/BookingService.dart';
-import 'data/conncetion.dart';
+import 'Data/BookingService.dart';
+import 'AddBookingScreen.dart';
+import 'app_theme.dart';
 
 class BookingScreen extends StatefulWidget {
   final int userId;
@@ -25,12 +26,55 @@ class _BookingScreenState extends State<BookingScreen> {
     bookingItems = bookingService.getBookings(widget.userId);
   }
 
+  Future<void> openAddBooking() async {
+    final added = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AddBookingScreen(widget.userId),
+      ),
+    );
+
+    if (added == true && mounted) {
+      setState(() {
+        loadBookings();
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تم الحجز بنجاح')),
+      );
+    }
+  }
+
+  Future<void> confirmAndCancel(int bookingId) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Cancel Booking'),
+        content: const Text('Are you sure you want to cancel this booking?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('No'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text(
+              'Yes',
+              style: TextStyle(color: AppColors.danger),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await cancelBooking(bookingId);
+    }
+  }
+
   Future<void> cancelBooking(int bookingId) async {
     try {
-      await bookingService.cancelBooking(
-        widget.userId,
-        bookingId,
-      );
+      await bookingService.cancelBooking(widget.userId, bookingId);
 
       if (!mounted) return;
 
@@ -39,15 +83,16 @@ class _BookingScreenState extends State<BookingScreen> {
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Booking cancelled successfully'),
-        ),
+        const SnackBar(content: Text('Booking cancelled successfully')),
       );
     } catch (e) {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
+        SnackBar(
+          content: Text('Error: $e'),
+          backgroundColor: AppColors.danger,
+        ),
       );
     }
   }
@@ -55,88 +100,93 @@ class _BookingScreenState extends State<BookingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('My Bookings'),
-        backgroundColor: Colors.indigo,
+      appBar: buildAppBar(
+        'My Bookings',
+        actions: [
+          IconButton(
+            onPressed: openAddBooking,
+            icon: const Icon(
+              Icons.add_circle,
+              color: AppColors.gold,
+              size: 30,
+            ),
+          ),
+        ],
       ),
       body: FutureBuilder<List<dynamic>>(
         future: bookingItems,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
+            return const Center(child: CircularProgressIndicator());
           }
 
           if (snapshot.hasError) {
             return Center(
-              child: Text('Error: ${snapshot.error}'),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text('Error: ${snapshot.error}'),
+              ),
             );
           }
 
           final items = snapshot.data ?? [];
 
           if (items.isEmpty) {
-            return const Center(
-              child: Text('No Bookings Found'),
-            );
+            return const Center(child: Text('No Bookings Found'));
           }
 
           double total = 0;
-
           for (var item in items) {
-            total += (item['roomPrice'] as num).toDouble() * (item['nights'] as num).toInt();
+            total += (item['totalPrice'] as num?)?.toDouble() ?? 0;
           }
 
           return Column(
             children: [
               Expanded(
                 child: ListView.builder(
+                  padding: const EdgeInsets.all(14),
                   itemCount: items.length,
                   itemBuilder: (context, index) {
                     final item = items[index];
 
-                    final String imagePath = item['roomImageUrl']?.toString() ?? '';
-
-                    final String imageUrl = imagePath.isEmpty
-                        ? ''
-                        : Uri.parse(ConnectionString.baseUrl)
-                        .resolve(imagePath)
-                        .toString();
-
-                    return Card(
-                      margin: const EdgeInsets.all(10),
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: AppColors.shadow,
+                            blurRadius: 10,
+                            offset: Offset(0, 4),
+                          ),
+                        ],
+                      ),
                       child: ListTile(
-                        leading: SizedBox(
-                          width: 65,
-                          height: 65,
-                          child: imageUrl.isNotEmpty
-                              ? Image.network(
-                            imageUrl,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return const Icon(Icons.hotel);
-                            },
-                          )
-                              : const Icon(Icons.hotel),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 8,
+                        ),
+                        leading: const CircleAvatar(
+                          radius: 26,
+                          backgroundColor: AppColors.black,
+                          child: Icon(Icons.hotel, color: AppColors.gold),
                         ),
                         title: Text(
-                          item['roomName']?.toString() ?? 'Room Details',
+                          'غرفة ${item['roomNumber'] ?? ''}',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                         subtitle: Text(
-                          '${item['roomPrice']} SAR / Night\n'
-                              'Nights: ${item['nights']} | Status: ${item['status']}\n'
-                              'Check-in: ${item['checkInDate']}',
+                          '${item['customerName'] ?? ''}\n'
+                              'Nights: ${item['numberOfNights']} | Total: ${item['totalPrice']} SAR',
                         ),
                         isThreeLine: true,
                         trailing: IconButton(
                           icon: const Icon(
-                            Icons.cancel,
-                            color: Colors.red,
+                            Icons.cancel_outlined,
+                            color: AppColors.danger,
                           ),
-                          onPressed: () {
-                            cancelBooking(item['bookingId']);
-                          },
+                          onPressed: () => confirmAndCancel(item['id'] as int),
                         ),
                       ),
                     );
@@ -144,15 +194,26 @@ class _BookingScreenState extends State<BookingScreen> {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.all(20),
                 width: double.infinity,
-                child: Text(
-                  'Total Cost: ${total.toStringAsFixed(2)} SAR',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 23,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.green,
+                decoration: const BoxDecoration(
+                  color: AppColors.black,
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(24),
+                  ),
+                ),
+                child: SafeArea(
+                  top: false,
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Text(
+                      'Total Cost: ${total.toStringAsFixed(2)} SAR',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.gold,
+                      ),
+                    ),
                   ),
                 ),
               ),
