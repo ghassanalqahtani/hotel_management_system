@@ -39,7 +39,6 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     setState(() => _adding = true);
 
     try {
-      // الـ CartService يضيف كمية 1 في كل استدعاء، فنكرره بعدد الكمية
       for (var i = 0; i < _quantity; i++) {
         await _cartService.addToCart(widget.userId, productId as int);
       }
@@ -81,7 +80,6 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // صورة المنتج
             Container(
               width: double.infinity,
               height: 280,
@@ -123,7 +121,6 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // الاسم
                   Text(
                     name,
                     style: const TextStyle(
@@ -134,7 +131,6 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
 
                   const SizedBox(height: 10),
 
-                  // السعر
                   Text(
                     '${product['price']} SAR',
                     style: const TextStyle(
@@ -146,7 +142,6 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
 
                   const SizedBox(height: 24),
 
-                  // الكمية
                   Center(
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -188,7 +183,6 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
 
                   const SizedBox(height: 24),
 
-                  // زر الإضافة للسلة
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(

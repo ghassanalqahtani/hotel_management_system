@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import '../../Hotel/Data/ProductService.dart';
+import '../Data/ProductService.dart';
 
 class ProductProvider extends ChangeNotifier {
   final ProductService productService = ProductService();
 
   List<dynamic> products = [];
-      
+
   bool isLoading = false;
 
   String? error;
@@ -28,6 +28,13 @@ class ProductProvider extends ChangeNotifier {
       isLoading = false;
       notifyListeners();
     }
+  }
+
+  dynamic getById(int id) {
+    for (final p in products) {
+      if (p['id'] == id) return p;
+    }
+    return null;
   }
 
   void clear() {

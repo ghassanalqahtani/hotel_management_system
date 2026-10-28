@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../Hotel/Data/conncetion.dart';
 import '../../Hotel/app_theme.dart';
-import '../../Hotel/productDetailsScreen.dart';
+import 'productDetailsScreen.dart';
 import '../providers/ProductProvider.dart';
-
 
 class ProductsScreen extends StatefulWidget {
   const ProductsScreen(this.userId, {super.key});
@@ -16,6 +14,8 @@ class ProductsScreen extends StatefulWidget {
 }
 
 class _ProductsScreenState extends State<ProductsScreen> {
+  final String dashboardUrl = 'https://wf2mrq0n-7133.inc1.devtunnels.ms';
+
   @override
   void initState() {
     super.initState();
@@ -28,9 +28,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
     if (imagePath.isEmpty) return '';
     if (imagePath.startsWith('http')) return imagePath;
 
-    return Uri.parse(ConnectionString.imagesBaseUrl)
-        .resolve(imagePath)
-        .toString();
+    return Uri.parse(dashboardUrl).resolve(imagePath).toString();
   }
 
   Widget _imagePlaceholder(IconData icon) {
@@ -60,10 +58,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      provider.error!,
-                      textAlign: TextAlign.center,
-                    ),
+                    Text(provider.error!, textAlign: TextAlign.center),
                     const SizedBox(height: 16),
                     ElevatedButton(
                       onPressed: () => provider.loadProducts(force: true),
@@ -112,7 +107,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                       context,
                       MaterialPageRoute(
                         builder: (context) =>
-                            ProductDetailsScreen(product, widget.userId),
+                            ProductDetailsScreen(product['id'] as int),
                       ),
                     );
                   },
@@ -143,6 +138,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                 fit: BoxFit.cover,
                                 errorBuilder:
                                     (context, error, stackTrace) {
+                                  print('IMAGE ERROR: $imageUrl');
                                   return _imagePlaceholder(
                                     Icons.image_not_supported,
                                   );
